@@ -15,7 +15,6 @@ The purpose of an egg hunter is to search for a given egg/tag/key/pattern. The p
 
 Before I explain what the VAS is, let's look at the memory layout of a linux process. Table 1 visualizes how the memory layout looks like.
 
-<div align="center">
 | Process Memory layout |
 | --------------------- |
 | Kernel Space          |
@@ -27,7 +26,6 @@ Before I explain what the VAS is, let's look at the memory layout of a linux pro
 | Text                  |
 
 Table 1: Memory layout of a process
-</div>
 
 This is how programs are structured. For example, the `Text` segment contains the assembly instructions, the `Data` segment contains initialized global and static variables, and the `BSS` segment contains uninitialized variables.
 
@@ -38,7 +36,7 @@ This is where the virtual address space comes into play. When you execute a proc
 
 ![vas](vas.png)
 
-<p align="center">Figure 1: Virtual address space vs Physical address space. [1]</p>
+<p align="center">**Figure 1: Virtual address space vs Physical address space. [1]**</p>
 
 The CPU will in turn convert a virtual address to a physical address in order to perform its operations. But wait! There's more :) To make things easier, the virtual and physical address space is further divided into `pages`. More on this in the next section.
 
@@ -273,7 +271,11 @@ main()
 
 Compiling with `gcc -fno-stack-protector -z execstack shellcode.c -o shellcode` and running `./shellcode` yields the following result:
 
+<center>
+<div align="center">
 ![result](egghunter-result.png)
+</div>
+</center>
 
 Yay it works!
 
