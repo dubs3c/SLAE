@@ -271,11 +271,9 @@ main()
 
 Compiling with `gcc -fno-stack-protector -z execstack shellcode.c -o shellcode` and running `./shellcode` yields the following result:
 
-<center>
 <div align="center">
 ![result](egghunter-result.png)
 </div>
-</center>
 
 Yay it works!
 
