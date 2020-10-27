@@ -147,7 +147,7 @@ Great, now we know how to use the wrapper in order perform our system calls.
 
 Our code begins by creating a socket as I did in the C version:
 
-```asm
+```nasm
 global _start
 
 section .text
@@ -240,7 +240,7 @@ enum __socket_type
 
 Because we want to use TCP, we should use `SOCK_STREAM`. The end result looks like this:
 
-```asm
+```nasm
     ; # Setup socket
     ; Resulting file descriptor is saved to eax
     push edx
@@ -322,7 +322,7 @@ struct in_addr {
 `__kernel_sa_family_t` is defined as `typedef unsigned short __kernel_sa_family_t;` in `/usr/include/linux/socket.h`. From these definitions, we can write the following instructions:
 
 
-```asm
+```nasm
     ; setup sockaddr struct
     push edx         ; 0x0
     push word 0x3905 ; htons(1337)
@@ -333,7 +333,7 @@ The first `push` simply pushes 0x00000000 to the stack, this indicates we want t
 
 The complete instructions for binding our socket looks like this:
 
-```asm
+```nasm
     ; ---------------------------------
     ; # Setup bind
     ; socketcall
@@ -386,7 +386,7 @@ DESCRIPTION
 
 This instruction set is easy, as can be seen below:
 
-```asm
+```nasm
     ; --------------------
     ; # Setup listen
     ; socketcall
@@ -428,7 +428,7 @@ SYNOPSIS
 
 We don't actually care about the second and third parameter for `accept()`, those are only needed if you want information about the connecting peer, e.g. its address. Therefore the instructions are quite easy:
 
-```asm
+```nasm
     ; --------------------
     ; # Setup accept
     ; socketcall
@@ -484,7 +484,7 @@ DESCRIPTION
 
 By looking at the C version in the beginning of the article, we simply duplicate process by running `dup2` for STDIN, STDOUT and STDERR:
 
-```
+```nasm
     ; --------------------
     ; # Setup dup2
     ; redirect to stdin
@@ -541,7 +541,7 @@ DESCRIPTION
 
 We will use `execv` which requires two arguments, the file to be executed and additional arguments for the file being executed. We don't need any additional arguments, therefore we only pass `/bin/sh`, as can be seen below:
 
-```
+```nasm
     ; --------------------
     ; # Setup execv
     xor edx, edx
@@ -565,8 +565,7 @@ We will use `execv` which requires two arguments, the file to be executed and ad
 
 Now we should have something that looks like this:
 
-```asm
-
+```nasm
 ;---------------------------------
 ;
 ; Author: @dubs3c
