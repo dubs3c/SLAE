@@ -1,17 +1,19 @@
 
 #  Egg hunting in Linux x86 Assembly
 
-When writing exploits, you sometimes encounter a situation where your payload is too big, the buffer is to small to fit your payload. This is where "eggs" come in to play. The basic idea of egg hunting is to divide the payload in to two parts, part one is the hunter while part two is the hunted (the egg). The hunter is a set of instructions that searches the program's virtual address space for a given pattern/tag/key (the egg). Once it is found, the hunter will jump to the payload following the key.
+When writing exploits, you sometimes encounter a situation where your payload is too big, you can't fit your payload inside the buffer. This is where "eggs" come in to play. The basic idea of egg hunting is to divide the payload in to two parts, part one is the hunter while part two is the hunted (the egg). The hunter is a set of instructions that searches the program's virtual address space for a given pattern (the egg). Once it is found, the hunter will jump to the payload following the egg.
 
-The egg can sometimes be referred to as key, tag or pattern. The payload is formatted as `<egg><egg><shellcode>`. The egg is specified twice in order to reduce collisions. If your egg is only four bytes, it could be possible that there exists an instruction that is the same as your egg. Another possibility is that you encounter the egg that you have instructed to look for. Therefore, if you specify the egg twice, you can be sure that is the real egg.
+The egg can sometimes be referred to as key, tag or pattern. Throughout this article, if any of those terms are used, remember that they all mean the same thing.
+
+The payload is formatted as `<egg><egg><shellcode>`. The egg is specified twice in order to reduce collisions. If your egg is only four bytes, it could be possible that there exists an instruction that is the same as your egg. Another possibility is that you encounter the egg that you have instructed to look for. Therefore, if you specify the egg twice, you can be sure that is the real egg.
 
 Before continuing this article, I will briefly try to explain a few concepts needed for understanding how egg hunting works. If you already know all about page sizes and virtual address spaces, feel free to skip to [**Hunting time**](#hunting-time).
 
-When researching about egg hunters, I stumbled upon this article [http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf](http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf) written by skape back in 2004. Much of this article is based on his research.
+When researching about egg hunters, I stumbled upon this paper [http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf](http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf) written by skape back in 2004. Much of this article is based on this paper.
 
 ### Virtual Address Space
 
-The purpose of an egg hunter is to search for a given egg/tag/key/pattern. The program that searches for this key will search virtual address space (VAS) of a given process. This process is usually the process which your payload gets injected into.
+The purpose of an egg hunter is to search for a given key. The program that searches for this key will search virtual address space (VAS) of a given process. This process is usually the process which your payload gets injected into.
 
 Before I explain what the VAS is, let's look at the memory layout of a linux process. Table 1 visualizes how the memory layout looks like.
 
@@ -31,7 +33,7 @@ This is how programs are structured. For example, the `Text` segment contains th
 
 However, these segments can be spread out when looking at the physical memory address space, meaning the RAM. So how does your operating system know where a segment is and which segments belongs to the correct process? You most likely have multiple programs running at any given time.
 
-This is where the virtual address space comes into play. When you execute a process, your operating system assigns a virtual address space for your process. This not only isolates the process from other running processes, but also tricks the process into thinking that there only exists one space and that the process occupies it. This can be visualized in figure 1:
+This is where the virtual address space comes into play. When you start a process, your operating system assigns a virtual address space for your process. Not only does this isolate the process from other running processes, it also tricks the process into thinking that there only exists one space and that the process occupies it. This can be visualized in figure 1:
 
 
 ![vas](vas.png)
@@ -149,7 +151,7 @@ inc_page:
     or dx, 0xfff            ; PAGE_SIZE -> The OR operation gets the next page
 ```
 
-Next we will perform a system call to access() with the first parameter being the address we want to check and the second parameter being 0. When performing syscalls, the registers can be used as the following:
+Next we will perform a system call to access() with the first parameter being the address we want to check and the second parameter being 0. When performing syscalls, the registers can be used as following:
 
 | Register | Purpose |
 | -------- | -------
