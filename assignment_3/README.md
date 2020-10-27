@@ -5,7 +5,7 @@ When writing exploits, you sometimes encounter a situation where your payload is
 
 The egg can sometimes be referred to as key, tag or pattern. The payload is formatted as `<egg><egg><shellcode>`. The egg is specified twice in order to reduce collisions. If your egg is only four bytes, it could be possible that there exists an instruction that is the same as your egg. Another possibility is that you encounter the egg that you have instructed to look for. Therefore, if you specify the egg twice, you can be sure that is the real egg.
 
-Before continuing this article, I will briefly try to explain a few concepts needed for understanding how egg hunting works. If you already know all about page sizes and virtual address spaces, feel free to skip to **Hunting time**.
+Before continuing this article, I will briefly try to explain a few concepts needed for understanding how egg hunting works. If you already know all about page sizes and virtual address spaces, feel free to skip to [**Hunting time**](#hunting-time).
 
 When researching about egg hunters, I stumbled upon this article [http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf](http://www.hick.org/code/skape/papers/egghunt-shellcode.pdf) written by skape back in 2004. Much of this article is based on his research.
 
@@ -36,7 +36,7 @@ This is where the virtual address space comes into play. When you execute a proc
 
 ![vas](vas.png)
 
-<p align="center">**Figure 1: Virtual address space vs Physical address space. [1]**</p>
+**Figure 1: Virtual address space vs Physical address space. [1]**
 
 The CPU will in turn convert a virtual address to a physical address in order to perform its operations. But wait! There's more :) To make things easier, the virtual and physical address space is further divided into `pages`. More on this in the next section.
 
@@ -271,9 +271,7 @@ main()
 
 Compiling with `gcc -fno-stack-protector -z execstack shellcode.c -o shellcode` and running `./shellcode` yields the following result:
 
-<p align="center">
 ![result](egghunter-result.png)
-</p>
 
 Yay it works!
 
