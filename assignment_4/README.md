@@ -3,18 +3,24 @@
 
 Malware detection techniques has improved a lot over the years. Today companies are investing in machine learning methods for detecting malware, which sounds pretty cool if you ask me. However, there is one method that has been used since the first anti-virus software, which is signature based detection.
 
-When disassembling a program you can analyze the assembly instructions in order to understand the program from the lowest level. It's also possible from the assembly code to identify a set of unique instructions that identifies a specific program. These unique instructions form the signature. The instructions can be anything that identifies a specific and unique behaviour in the program. An example could be a decryption routine that identifies perhaps a decryption stub used for decrypting shellcode.
+When disassembling a program you can analyze the assembly instructions in order to understand the program from the lowest level. It's also possible from the assembly code to identify a set of unique instructions that identifies a specific program. These unique instructions form the signature. The instructions can be anything that identifies a specific and unique behaviour in the program. An example could be a decryption routine that identifies a decryption stub used for decrypting shellcode.
 
-How do we bypass signature detections? Well, we change the signature. You either do this manually or you write an encoder which takes shellcode as input and outputs an encoded shellcode, which as zero known signatures for it. In this article, I will present a very easy and trivial encoding scheme for from AVs :)
+How do we bypass signature detections? Well, we change the signature. You either do this manually or you write an encoder which takes shellcode as input and outputs an encoded shellcode, which as zero known signatures for it. In this article, I will present a very easy and trivial encoding scheme for hiding from AVs :)
 
 ## The Algorithm
 
-The scheme I have chosen is a simple insertion encoder with XOR twist. Given a piece of shellcode, the encoder will insert a value between 1-255 as a prefix for each shellcode byte. This value will then be XORed with the shellcode byte. This method has some drawbacks:
+The scheme I have chosen is a simple insertion encoder with XOR twist. Given a piece of shellcode, the encoder will generate a random value K<sub>n</sub> between 1-255 for each shellcode byte S<sub>n</sub>. Each random value will be XORed with with each shellcode byte, like so: K<sub>1</sub> ^ S<sub>1</sub> = R<sub>1</sub>. The original shellcode will be modified to include the random value as a prefix for the now encoded shellcode byte. The final shellcode can be seen as:
+
+```
+[K1][R1][K2][R2][K3][R3]...[KN][RN]
+```
+
+Even though it is a trivial obfuscation technique, it has some drawbacks:
 
 - It will double the shellcode length 
-- Once the shellcode has been decoded, a bunch of garbage data will exist follow1ing the shellcode. This means that if your shellcode does not return, the garbage data will be executed which leads to a segfault.
+- Once the shellcode has been decoded, a bunch of garbage data will exist following the shellcode. This means that if your shellcode does not return, the garbage data will be executed which leads to a segfault.
 
-For demonstrating how bypassing signature detection looks like, this method will suffice.
+However, for demonstrating how bypassing signature detection can look like, this method will suffice.
 
 ## The Encoder
 
