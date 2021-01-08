@@ -44,8 +44,6 @@ www-data:x:33:33:www-data:/var/www:/bin/sh
 
 Now that we know that the payload works, we can start analyzing it using a few simple tools.
 
-0000003D### ndisasm
-
 With `ndisasm` we can disassemble the binary and analyse the assembly code.
 
 ```
