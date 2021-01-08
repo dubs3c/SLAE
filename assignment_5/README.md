@@ -428,3 +428,11 @@ metasploit:Az/dIsj4p4IRc:0:0::/:/bin/sh
 Should be noted that the binary needs to be run as root, since it's adding a root user.
 
 ## linux/x86/shell/reverse_tcp
+
+---
+This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
+
+[https://www.pentesteracademy.com/course?id=3](https://www.pentesteracademy.com/course?id=3)
+
+Student ID: SLAE-1490
+
