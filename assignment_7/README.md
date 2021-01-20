@@ -5,9 +5,9 @@ In this article, we will build a simple crypter for encrypting and decrypting sh
 
 ## Encryption
 
-The encryption/decryption process is using AES GCM and a specific file in `/etc/` concatenated with current user logged in as key. This is called *Environmental Keying*, meaning you use specific values found in the victim's environment such as files, hostname or users. The purpose of this is to make sure a given malware **only** executes in a given environment. This means the attacker needs to know details about the environment before encrypting any shellcode.
+The encryption/decryption process is using AES GCM and a specific file in `/etc/` concatenated with the current user logged in as the key. This is called *Environmental Keying*, meaning you use specific values found in the victim's environment such as files, hostname or users. The purpose of this is to make sure that your malware **only** executes in a specific environment. This means the attacker needs to know some details about the environment before encrypting any shellcode.
 
-This also makes it difficult for any analysts trying to decrypt the shellcode. Because they would need the correct environment values in order to successfully decrypt the shellcode. Relying on dynamic analysis in a sandbox will is futile because of this reason.
+Analysing the shellcode will be difficult because the correct environment values are needed in order to successfully decrypt the shellcode. Relying on dynamic analysis in a sandbox is futile because of this reason.
 
 The specific values that I have chosen for the key is the file path `/etc/vmware-tools/scripts/vmware/network` and current logged in user. The final key will look like this: `/etc/vmware-tools/scripts/vmware/networkdubs3c`.
 
@@ -21,7 +21,7 @@ dubs3c@slae:~/SLAE/EXAM/github/assignment_7$
 
 ## Decryption
 
-The decryption process will loop over all files and folders in `/etc/` and try to use each file path as the key together with the username. When the correct key is found, the shellcode is decrypted.
+The decryption function will loop over all files and folders in `/etc/` and try each file path as the key together with the current username. When the correct key is found, the shellcode is decrypted.
 
 Decrypting shellcode:
 
