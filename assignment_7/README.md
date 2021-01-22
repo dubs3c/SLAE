@@ -3,6 +3,8 @@
 
 In this article, we will build a simple crypter for encrypting and decrypting shellcode. I chose to implement the crypter in go using environmental keys.
 
+I will not spend time implementing a fancy shellcode execution method in this article, only encryption and decryption methods are in scope for now.
+
 ## Encryption
 
 The encryption/decryption process is using AES GCM and a specific file in `/etc/` concatenated with the current user logged in as the key. This is called *Environmental Keying*, meaning you use specific values found in the victim's environment such as files, hostname or users. The purpose of this is to make sure that your malware **only** executes in a specific environment. This means the attacker needs to know some details about the environment before encrypting any shellcode.
