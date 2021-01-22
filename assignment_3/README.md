@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
 ```
 
-The script can be as following:
+The script can be used as following:
 
 ```
 dubs3c@slae:~/SLAE/EXAM/github/assignment_3$ python3 wrapper.py "\xef\xbe\xad\xde" "\x31\xdb\xf7\xe3\x53\x43\x53\x6a\x02\x89\xe1\xb0\x66\xcd
